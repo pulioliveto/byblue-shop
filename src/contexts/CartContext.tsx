@@ -18,7 +18,7 @@ export interface CartItem {
 
 export interface CartState {
   items: CartItem[]
-  total: number
+  total: number // Solo el total de productos, sin envío ni impuestos
   itemCount: number
   isLoading: boolean
 }
@@ -55,10 +55,12 @@ function cartReducer(state: CartState, action: CartAction): CartState {
         
         toast.success(`${action.payload.name} (${newQuantity}) actualizado en el carrito`)
         
+        const total = calculateTotal(updatedItems)
+        
         return {
           ...state,
           items: updatedItems,
-          total: calculateTotal(updatedItems),
+          total: total,
           itemCount: calculateItemCount(updatedItems)
         }
       } else {
@@ -69,10 +71,12 @@ function cartReducer(state: CartState, action: CartAction): CartState {
         
         toast.success(`${action.payload.name} agregado al carrito`)
         
+        const total = calculateTotal(updatedItems)
+        
         return {
           ...state,
           items: updatedItems,
-          total: calculateTotal(updatedItems),
+          total: total,
           itemCount: calculateItemCount(updatedItems)
         }
       }
@@ -80,10 +84,12 @@ function cartReducer(state: CartState, action: CartAction): CartState {
     
     case 'REMOVE_ITEM': {
       const updatedItems = state.items.filter(item => item._id !== action.payload)
+      const total = calculateTotal(updatedItems)
+      
       return {
         ...state,
         items: updatedItems,
-        total: calculateTotal(updatedItems),
+        total: total,
         itemCount: calculateItemCount(updatedItems)
       }
     }
@@ -94,10 +100,12 @@ function cartReducer(state: CartState, action: CartAction): CartState {
       if (quantity <= 0) {
         // Si la cantidad es 0 o menos, remover el item
         const updatedItems = state.items.filter(item => item._id !== id)
+        const total = calculateTotal(updatedItems)
+        
         return {
           ...state,
           items: updatedItems,
-          total: calculateTotal(updatedItems),
+          total: total,
           itemCount: calculateItemCount(updatedItems)
         }
       }
@@ -113,10 +121,12 @@ function cartReducer(state: CartState, action: CartAction): CartState {
         return item
       })
       
+      const total = calculateTotal(updatedItems)
+
       return {
         ...state,
         items: updatedItems,
-        total: calculateTotal(updatedItems),
+        total: total,
         itemCount: calculateItemCount(updatedItems)
       }
     }
@@ -138,10 +148,12 @@ function cartReducer(state: CartState, action: CartAction): CartState {
     }
     
     case 'LOAD_CART': {
+      const total = calculateTotal(action.payload)
+      
       return {
         ...state,
         items: action.payload,
-        total: calculateTotal(action.payload),
+        total: total,
         itemCount: calculateItemCount(action.payload),
         isLoading: false
       }
@@ -154,6 +166,7 @@ function cartReducer(state: CartState, action: CartAction): CartState {
 
 // Funciones helper
 function calculateTotal(items: CartItem[]): number {
+  // Solo calcular el total de los productos, sin envío ni impuestos
   return items.reduce((total, item) => total + (item.price * item.quantity), 0)
 }
 
