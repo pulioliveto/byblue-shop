@@ -1,0 +1,84 @@
+"use client";
+
+import Link from "next/link";
+import { motion } from "framer-motion";
+import { fadeInUp, staggerContainer, footerViewport } from "@/components/animations/variants";
+
+const footerSections = [
+  {
+    title: "Productos",
+    links: [
+      { href: "/shop/smartphones", label: "Smartphones" },
+      { href: "/shop/laptops", label: "Laptops" },
+      { href: "/shop/accesorios", label: "Accesorios" }
+    ]
+  },
+  {
+    title: "Soporte",
+    links: [
+      { href: "/support", label: "Centro de ayuda" },
+      { href: "/contact", label: "Contacto" },
+      { href: "/warranty", label: "Garantía" }
+    ]
+  },
+  {
+    title: "Empresa",
+    links: [
+      { href: "/about", label: "Acerca de" },
+      { href: "/privacy", label: "Privacidad" },
+      { href: "/terms", label: "Términos" }
+    ]
+  }
+];
+
+export default function Footer() {
+  return (
+    <motion.footer 
+      className="border-t border-primary/20 bg-secondary/30"
+      initial="hidden"
+      whileInView="visible"
+      viewport={footerViewport}
+      variants={staggerContainer}
+    >
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <motion.div className="grid grid-cols-1 md:grid-cols-4 gap-8" variants={staggerContainer}>
+          {/* Brand Section */}
+          <motion.div className="space-y-4" variants={fadeInUp}>
+            <div className="flex items-center space-x-2">
+              <div className="w-8 h-8 bg-gradient-to-br from-primary to-accent rounded-lg flex items-center justify-center">
+                <span className="text-white font-bold text-sm">BB</span>
+              </div>
+              <span className="font-heading font-bold text-xl">ByBlue Shop</span>
+            </div>
+            <p className="text-muted-foreground text-sm">La tecnología que define el futuro, hoy.</p>
+          </motion.div>
+
+          {/* Footer Links */}
+          {footerSections.map((section, index) => (
+            <motion.div key={section.title} variants={fadeInUp}>
+              <h3 className="font-semibold mb-4">{section.title}</h3>
+              <div className="space-y-2 text-sm text-muted-foreground">
+                {section.links.map((link) => (
+                  <Link 
+                    key={link.href} 
+                    href={link.href} 
+                    className="block hover:text-primary transition-colors"
+                  >
+                    {link.label}
+                  </Link>
+                ))}
+              </div>
+            </motion.div>
+          ))}
+        </motion.div>
+
+        <motion.div 
+          className="border-t border-primary/20 mt-8 pt-8 text-center text-sm text-muted-foreground"
+          variants={fadeInUp}
+        >
+          <p>&copy; 2024 ByBlue Shop. Todos los derechos reservados.</p>
+        </motion.div>
+      </div>
+    </motion.footer>
+  );
+}
