@@ -28,7 +28,52 @@ const UserSchema = new Schema<UserDocument>({
     type: String,
     enum: ['USER', 'ADMIN', 'CREADOR'],
     default: 'USER'
-  }
+  },
+  // Campos de seguridad relevantes para Google OAuth
+  lastLogin: {
+    type: Date,
+    default: Date.now
+  },
+  loginCount: {
+    type: Number,
+    default: 0
+  },
+  ipAddress: {
+    type: String
+  },
+  userAgent: {
+    type: String
+  },
+  isActive: {
+    type: Boolean,
+    default: true
+  },
+  suspiciousActivity: [{
+    type: {
+      type: String,
+      enum: ['MULTIPLE_SESSIONS', 'SUSPICIOUS_IP', 'UNUSUAL_ACTIVITY', 'ADMIN_ACCESS_ATTEMPT']
+    },
+    timestamp: {
+      type: Date,
+      default: Date.now
+    },
+    details: {
+      type: String
+    },
+    ipAddress: {
+      type: String
+    }
+  }],
+  // Para tracking de sesiones múltiples
+  activeSessions: [{
+    sessionId: String,
+    ipAddress: String,
+    userAgent: String,
+    lastActivity: {
+      type: Date,
+      default: Date.now
+    }
+  }]
 }, {
   timestamps: true, // Agrega automáticamente createdAt y updatedAt
   toJSON: { virtuals: true },

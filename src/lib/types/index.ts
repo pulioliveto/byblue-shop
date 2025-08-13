@@ -6,6 +6,24 @@ export interface User {
   role: 'USER' | 'ADMIN' | 'CREADOR';
   createdAt: Date;
   updatedAt: Date;
+  // Campos de seguridad específicos para Google OAuth
+  lastLogin?: Date;
+  loginCount?: number;
+  ipAddress?: string;
+  userAgent?: string;
+  isActive?: boolean;
+  suspiciousActivity?: Array<{
+    type: 'MULTIPLE_SESSIONS' | 'SUSPICIOUS_IP' | 'UNUSUAL_ACTIVITY' | 'ADMIN_ACCESS_ATTEMPT';
+    timestamp: Date;
+    details?: string;
+    ipAddress?: string;
+  }>;
+  activeSessions?: Array<{
+    sessionId: string;
+    ipAddress: string;
+    userAgent: string;
+    lastActivity: Date;
+  }>;
 }
 
 export interface Product {
