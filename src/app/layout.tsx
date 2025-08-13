@@ -3,8 +3,10 @@ import type { Metadata } from "next"
 import { Work_Sans, Open_Sans } from "next/font/google"
 import "./globals.css"
 import AuthProvider from "@/components/providers/AuthProvider"
+import { CartProvider } from "@/contexts/CartContext"
 import Navbar from "@/components/Navbar"
 import { Footer } from "@/components/sections"
+import { Toaster } from "sonner"
 
 const workSans = Work_Sans({
   subsets: ["latin"],
@@ -33,13 +35,21 @@ export default function RootLayout({
     <html lang="es" className={`${workSans.variable} ${openSans.variable} dark`}>
       <body className="font-sans antialiased">
         <AuthProvider>
-          <div className="min-h-screen bg-gradient-to-br from-background via-background to-secondary/20">
-            <Navbar />
-            <main className="flex-1">
-              {children}
-            </main>
-            <Footer />
-          </div>
+          <CartProvider>
+            <div className="min-h-screen bg-gradient-to-br from-background via-background to-secondary/20">
+              <Navbar />
+              <main className="flex-1">
+                {children}
+              </main>
+              <Footer />
+            </div>
+            <Toaster 
+              position="top-right"
+              toastOptions={{
+                className: 'bg-background border-border text-foreground',
+              }}
+            />
+          </CartProvider>
         </AuthProvider>
       </body>
     </html>

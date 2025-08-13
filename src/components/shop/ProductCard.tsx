@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { ShoppingCart, Zap } from "lucide-react"
 import { Product, Category } from "@/lib/types/shop"
+import AddToCartButton from "./AddToCartButton"
 
 interface ProductCardProps {
   product: Product
@@ -23,16 +24,16 @@ const formatPrice = (price: number) => {
 
 export default function ProductCard({ product, index, categories }: ProductCardProps) {
   return (
-    <Link href={`/product/${product._id}`} className="block">
-      <Card
-        className="group relative overflow-hidden bg-background/95 backdrop-blur-sm border-border hover:border-primary/30 transition-all duration-500 hover:shadow-2xl hover:shadow-primary/20 hover:-translate-y-2 w-full max-w-[320px] mx-auto cursor-pointer"
-        style={{
-          animationDelay: `${index * 100}ms`,
-          animation: "fadeInUp 0.6s ease-out forwards",
-        }}
-      >
+    <Card
+      className="group relative overflow-hidden bg-background/95 backdrop-blur-sm border-border hover:border-primary/30 transition-all duration-500 hover:shadow-2xl hover:shadow-primary/20 hover:-translate-y-2 w-full max-w-[320px] mx-auto"
+      style={{
+        animationDelay: `${index * 100}ms`,
+        animation: "fadeInUp 0.6s ease-out forwards",
+      }}
+    >
+      <Link href={`/product/${product._id}`}>
         <CardHeader className="p-0">
-          <div className="relative aspect-square overflow-hidden bg-gradient-to-br from-primary/5 to-accent/10">
+          <div className="relative aspect-square overflow-hidden bg-gradient-to-br from-primary/5 to-accent/10 cursor-pointer">
             {product.images.length > 0 ? (
               <Image
                 src={product.images[0] || "/placeholder.svg"}
@@ -110,18 +111,16 @@ export default function ProductCard({ product, index, categories }: ProductCardP
             </div>
           )}
         </CardContent>
+      </Link>
 
-        <CardFooter className="p-6 pt-0">
-          <Button
-            size="default"
-            className="w-full bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90 text-white font-semibold shadow-lg hover:shadow-xl transition-all duration-300 disabled:bg-muted disabled:text-muted-foreground transform hover:scale-[1.02]"
-            disabled={product.stock === 0}
-          >
-            <ShoppingCart className="w-4 h-4 mr-2" />
-            {product.stock === 0 ? "Sin stock" : "Agregar al carrito"}
-          </Button>
-        </CardFooter>
-      </Card>
-    </Link>
+      <CardFooter className="p-6 pt-0">
+        <AddToCartButton 
+          product={product}
+          variant="default"
+          size="default"
+          className="w-full"
+        />
+      </CardFooter>
+    </Card>
   )
 }

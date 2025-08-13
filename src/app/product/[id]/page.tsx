@@ -29,6 +29,7 @@ import {
 } from "lucide-react"
 import { motion } from "framer-motion"
 import { useAuth } from "@/hooks/useAuth"
+import { useCart } from "@/contexts/CartContext"
 
 interface Product {
   _id: string
@@ -68,6 +69,7 @@ interface Review {
 export default function ProductDetailPage() {
   const params = useParams()
   const { user, isAuthenticated } = useAuth()
+  const { addItem } = useCart()
   const [product, setProduct] = useState<Product | null>(null)
   const [reviews, setReviews] = useState<Review[]>([])
   const [loading, setLoading] = useState(true)
@@ -120,13 +122,33 @@ export default function ProductDetailPage() {
   }
 
   const handleAddToCart = () => {
-    // TODO: Implementar lógica del carrito
-    console.log("Agregando al carrito:", {
-      productId: product?._id,
-      color: selectedColor,
-      model: selectedModel,
-      quantity
-    })
+    if (!product) return
+    
+    // Verificar stock disponible
+    if (product.stock <= 0) {
+      console.log("Producto sin stock")
+      return
+    }
+
+    // Construir el item para agregar al carrito (SIN quantity - el carrito la maneja internamente)
+    const cartItem = {
+      _id: product._id,
+      name: product.name,
+      price: product.price,
+      originalPrice: product.originalPrice,
+      image: product.images?.[0] || '',
+      brand: product.brand,
+      category: product.category,
+      stock: product.stock,
+      // Agregar variantes seleccionadas si existen
+      ...(selectedColor && { selectedColor }),
+      ...(selectedModel && { selectedModel })
+    }
+
+    // Agregar al carrito la cantidad especificada (hacer múltiples llamadas si es necesario)
+    for (let i = 0; i < quantity; i++) {
+      addItem(cartItem)
+    }
   }
 
   const handleSubmitReview = async () => {

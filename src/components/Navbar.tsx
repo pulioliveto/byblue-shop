@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { ShoppingBag, Search, Menu, X, User } from "lucide-react"
 import { useState } from "react"
+import CartComponent from "./cart/CartComponent"
 
 export default function Navbar() {
   const { user, isLoading, isAuthenticated, isAdmin, isCreador, hasAdminPrivileges, hasCreadorPrivileges } = useAuth()
@@ -93,15 +94,8 @@ export default function Navbar() {
               <div className="w-8 h-8 bg-muted rounded-full animate-pulse" />
             ) : isAuthenticated && user ? (
               <div className="flex items-center space-x-4">
-                {/* Cart Icon */}
-                <Link href="/cart" className="relative group">
-                  <Button variant="ghost" size="sm" className="hover:bg-primary/10">
-                    <ShoppingBag className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors" />
-                  </Button>
-                  <span className="absolute -top-1 -right-1 w-4 h-4 bg-accent text-accent-foreground text-xs rounded-full flex items-center justify-center font-bold">
-                    0
-                  </span>
-                </Link>
+                {/* Cart Component */}
+                <CartComponent />
 
                 {/* User Dropdown */}
                 <DropdownMenu>
