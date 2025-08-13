@@ -1,0 +1,111 @@
+"use client"
+
+import Link from "next/link"
+import Image from "next/image"
+import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
+import { Card } from "@/components/ui/card"
+import { ShoppingCart } from "lucide-react"
+import { Product, Category } from "@/lib/types/shop"
+
+interface ProductListItemProps {
+  product: Product
+  index: number
+  categories: Category[]
+}
+
+const formatPrice = (price: number) => {
+  return new Intl.NumberFormat("es-AR", {
+    style: "currency",
+    currency: "ARS",
+  }).format(price)
+}
+
+export default function ProductListItem({ product, index, categories }: ProductListItemProps) {
+  return (
+    <Link href={`/product/${product._id}`} className="block">
+      <Card
+        className="p-6 bg-background/95 backdrop-blur-sm border-border hover:border-primary/30 transition-all duration-500 hover:shadow-xl hover:shadow-primary/10 cursor-pointer"
+        style={{
+          animationDelay: `${index * 100}ms`,
+          animation: "fadeInUp 0.6s ease-out forwards",
+        }}
+      >
+        <div className="flex gap-6">
+          <div className="relative w-32 h-32 flex-shrink-0 rounded-xl overflow-hidden bg-gradient-to-br from-primary/5 to-accent/10">
+            {product.images.length > 0 ? (
+              <Image 
+                src={product.images[0] || "/placeholder.svg"} 
+                alt={product.name} 
+                fill 
+                className="object-contain p-2" 
+              />
+            ) : (
+              <div className="w-full h-full bg-gradient-to-br from-muted/50 to-muted flex items-center justify-center rounded-xl">
+                <span className="text-muted-foreground text-xs font-medium">Sin imagen</span>
+              </div>
+            )}
+          </div>
+
+          <div className="flex-1">
+            <div className="flex items-start justify-between">
+              <div className="space-y-3">
+                <div className="flex flex-wrap gap-2">
+                  <Badge variant="outline" className="text-xs border-primary/30 text-primary bg-primary/10 font-medium">
+                    {categories.find((cat) => cat.value === product.category)?.label}
+                  </Badge>
+                  {product.subcategory && (
+                    <Badge variant="outline" className="text-xs border-border text-muted-foreground bg-muted/50">
+                      {product.subcategory}
+                    </Badge>
+                  )}
+                </div>
+
+                <h3 className="text-xl font-semibold text-foreground">{product.name}</h3>
+                <p className="text-sm text-muted-foreground font-medium">{product.brand}</p>
+                <p className="text-sm text-muted-foreground max-w-2xl leading-relaxed">{product.description}</p>
+
+                {product.tags.length > 0 && (
+                  <div className="flex flex-wrap gap-1">
+                    {product.tags.slice(0, 5).map((tag, index) => (
+                      <Badge
+                        key={index}
+                        variant="secondary"
+                        className="text-xs bg-muted/50 text-muted-foreground border-border font-medium"
+                      >
+                        {tag}
+                      </Badge>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div className="text-right space-y-4">
+                {product.hasDiscount && (
+                  <Badge className="bg-gradient-to-r from-red-500 to-red-600 text-white border-0 font-semibold">-{product.discountPercentage}%</Badge>
+                )}
+
+                <div className="flex flex-col items-end">
+                  {product.originalPrice && (
+                    <span className="text-sm text-muted-foreground line-through font-medium">
+                      {formatPrice(product.originalPrice)}
+                    </span>
+                  )}
+                  <span className="text-2xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">{formatPrice(product.price)}</span>
+                </div>
+
+                <Button
+                  className="bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90 text-white font-semibold shadow-lg hover:shadow-xl transition-all duration-300 disabled:bg-muted disabled:text-muted-foreground"
+                  disabled={product.stock === 0}
+                >
+                  <ShoppingCart className="w-4 h-4 mr-2" />
+                  {product.stock === 0 ? "Sin stock" : "Agregar al carrito"}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </Card>
+    </Link>
+  )
+}

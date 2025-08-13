@@ -4,6 +4,55 @@ import { authOptions } from '@/lib/auth';
 import connectDB from '@/lib/connection';
 import Product from '@/lib/models/Product';
 
+// GET - Obtener un producto individual (público)
+export async function GET(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    await connectDB();
+
+    const productId = params.id;
+
+    if (!productId) {
+      return NextResponse.json(
+        { success: false, message: 'ID de producto requerido' },
+        { status: 400 }
+      );
+    }
+
+    // Buscar el producto por ID
+    const product = await Product.findById(productId);
+
+    if (!product) {
+      return NextResponse.json(
+        { success: false, message: 'Producto no encontrado' },
+        { status: 404 }
+      );
+    }
+
+    // Solo mostrar productos activos en el frontend público
+    if (!product.isActive) {
+      return NextResponse.json(
+        { success: false, message: 'Producto no disponible' },
+        { status: 404 }
+      );
+    }
+
+    return NextResponse.json({
+      success: true,
+      data: product
+    });
+
+  } catch (error) {
+    console.error('Error al obtener producto:', error);
+    return NextResponse.json(
+      { success: false, message: 'Error interno del servidor' },
+      { status: 500 }
+    );
+  }
+}
+
 export async function DELETE(
   request: NextRequest,
   { params }: { params: { id: string } }

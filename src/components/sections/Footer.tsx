@@ -76,7 +76,18 @@ export default function Footer() {
           className="border-t border-primary/20 mt-8 pt-8 text-center text-sm text-muted-foreground"
           variants={fadeInUp}
         >
-          <p>&copy; 2024 ByBlue Shop. Todos los derechos reservados.</p>
+          <p>
+            &copy; 2025 ByBlue Shop. Desarrollada por{" "}
+            <a 
+              href="https://emilianooliveto.vercel.app/" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="text-primary hover:text-primary/80 transition-colors duration-300 underline underline-offset-2"
+            >
+              Emiliano
+            </a>
+            .
+          </p>
         </motion.div>
       </div>
     </motion.footer>
