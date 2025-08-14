@@ -16,16 +16,17 @@ const SUSPICIOUS_IPS = new Set<string>([
   // Agregar IPs conocidas como maliciosas
 ])
 
-// User agents sospechosos
+// User agents sospechosos (solo bots obvios, no navegadores legítimos)
 const SUSPICIOUS_USER_AGENTS = [
-  /bot/i,
-  /crawler/i,
-  /spider/i,
-  /scraper/i,
-  /curl/i,
-  /wget/i,
-  /python/i,
-  /php/i
+  /^bot$/i,
+  /^crawler$/i,
+  /^spider$/i,
+  /^scraper$/i,
+  /^curl\//i,
+  /^wget\//i,
+  /^python-/i,
+  /^php\//i,
+  // Excluir navegadores populares que pueden incluir "bot" en su string
 ]
 
 export function sanitizeInput(input: string): string {
@@ -94,18 +95,21 @@ export function detectSuspiciousActivity(request: NextRequest): {
     reasons.push('IP en lista negra')
   }
   
-  // Verificar User Agent sospechoso
+  // Verificar User Agent sospechoso (más específico)
   if (SUSPICIOUS_USER_AGENTS.some(pattern => pattern.test(userAgent))) {
-    reasons.push('User Agent sospechoso')
+    // Solo si el User Agent es obviamente un bot, no un navegador
+    if (!userAgent.includes('Mozilla') && !userAgent.includes('Chrome') && !userAgent.includes('Safari') && !userAgent.includes('Firefox')) {
+      reasons.push('User Agent sospechoso')
+    }
   }
   
-  // Verificar falta de headers comunes
-  if (!request.headers.get('accept')) {
-    reasons.push('Falta header Accept')
-  }
-  
-  if (!request.headers.get('accept-language')) {
-    reasons.push('Falta header Accept-Language')
+  // No verificar headers para rutas de autenticación ya que OAuth puede no incluirlos
+  const isAuthRoute = request.nextUrl.pathname.startsWith('/api/auth/')
+  if (!isAuthRoute) {
+    // Verificar falta de headers comunes solo para rutas no-auth
+    if (!request.headers.get('accept') && !userAgent.includes('Mozilla')) {
+      reasons.push('Falta header Accept')
+    }
   }
   
   // Verificar patrones de request sospechosos

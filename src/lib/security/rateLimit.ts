@@ -11,7 +11,9 @@ interface RateLimitConfig {
 
 export function createRateLimit(config: RateLimitConfig) {
   return async (request: NextRequest) => {
-    const ip = request.ip || request.headers.get('x-forwarded-for') || 'unknown'
+    const ip = request.headers.get('x-forwarded-for') || 
+               request.headers.get('x-real-ip') || 
+               'unknown'
     const key = `${ip}-${request.nextUrl.pathname}`
     const now = Date.now()
     
@@ -68,7 +70,7 @@ export function createRateLimit(config: RateLimitConfig) {
 // Configuraciones específicas para Google OAuth
 export const googleOAuthRateLimit = createRateLimit({
   windowMs: 10 * 60 * 1000, // 10 minutos
-  max: 10, // 10 intentos de OAuth cada 10 minutos por IP
+  max: 25, // Incrementado a 25 intentos de OAuth cada 10 minutos por IP
   message: 'Demasiados intentos de autenticación con Google. Espera 10 minutos.'
 })
 

@@ -41,19 +41,24 @@ export function securityHeaders(response: NextResponse): NextResponse {
 export async function securityMiddleware(request: NextRequest): Promise<NextResponse | null> {
   const { pathname } = request.nextUrl
   
-  // 1. Detectar actividad sospechosa
-  const suspiciousActivity = detectSuspiciousActivity(request)
-  if (suspiciousActivity.suspicious) {
-    console.warn(`Actividad sospechosa detectada:`, {
-      ip: request.headers.get('x-forwarded-for'),
-      pathname,
-      reasons: suspiciousActivity.reasons,
-      userAgent: request.headers.get('user-agent')
-    })
-    
-    // Bloquear requests muy sospechosos
-    if (suspiciousActivity.reasons.length > 2) {
-      return new NextResponse('Acceso bloqueado', { status: 403 })
+  // No aplicar seguridad estricta a rutas de autenticación
+  const isAuthRoute = pathname.startsWith('/api/auth/')
+  
+  if (!isAuthRoute) {
+    // 1. Detectar actividad sospechosa solo en rutas no-auth
+    const suspiciousActivity = detectSuspiciousActivity(request)
+    if (suspiciousActivity.suspicious) {
+      console.warn(`Actividad sospechosa detectada:`, {
+        ip: request.headers.get('x-forwarded-for'),
+        pathname,
+        reasons: suspiciousActivity.reasons,
+        userAgent: request.headers.get('user-agent')
+      })
+      
+      // Bloquear requests muy sospechosos (solo si tiene más de 3 razones)
+      if (suspiciousActivity.reasons.length > 3) {
+        return new NextResponse('Acceso bloqueado', { status: 403 })
+      }
     }
   }
   
@@ -74,20 +79,22 @@ export async function securityMiddleware(request: NextRequest): Promise<NextResp
     return rateLimitResult
   }
   
-  // 3. Sanitizar parámetros de consulta
-  const url = request.nextUrl
-  let modified = false
-  
-  for (const [key, value] of url.searchParams.entries()) {
-    const sanitized = sanitizeInput(value)
-    if (sanitized !== value) {
-      url.searchParams.set(key, sanitized)
-      modified = true
+  // 3. Sanitizar parámetros de consulta (solo para rutas no-auth)
+  if (!isAuthRoute) {
+    const url = request.nextUrl
+    let modified = false
+    
+    for (const [key, value] of url.searchParams.entries()) {
+      const sanitized = sanitizeInput(value)
+      if (sanitized !== value) {
+        url.searchParams.set(key, sanitized)
+        modified = true
+      }
     }
-  }
-  
-  if (modified) {
-    return NextResponse.redirect(url)
+    
+    if (modified) {
+      return NextResponse.redirect(url)
+    }
   }
   
   return null
