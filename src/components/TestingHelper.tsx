@@ -84,10 +84,10 @@ export default function TestingHelper() {
     toast.success(`${label} copiado al portapapeles`)
   }
 
-  const fillCard = (cardData: any) => {
-    // Función para llenar automáticamente los campos (si quieres implementar)
-    toast.info('Puedes copiar cada campo individualmente')
-  }
+  // const fillCard = (cardData: Record<string, unknown>) => {
+  //   // Función para llenar automáticamente los campos (si quieres implementar)
+  //   toast.info('Puedes copiar cada campo individualmente')
+  // }
 
   // Solo mostrar en desarrollo
   if (process.env.NODE_ENV === 'production') {

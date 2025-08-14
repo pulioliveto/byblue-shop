@@ -7,10 +7,14 @@ if (!MONGODB_URI) {
 }
 
 // Para evitar múltiples conexiones en desarrollo
-let cached = (global as any).mongoose;
+let cached = (global as typeof globalThis & {
+  mongoose: { conn: typeof mongoose | null; promise: Promise<typeof mongoose> | null }
+}).mongoose;
 
 if (!cached) {
-  cached = (global as any).mongoose = { conn: null, promise: null };
+  cached = (global as typeof globalThis & {
+    mongoose: { conn: typeof mongoose | null; promise: Promise<typeof mongoose> | null }
+  }).mongoose = { conn: null, promise: null };
 }
 
 async function connectDB() {

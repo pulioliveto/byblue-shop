@@ -17,7 +17,7 @@ export default function CheckoutSuccess() {
   const { data: session, status } = useSession()
   const [paymentInfo, setPaymentInfo] = useState<any>(null)
   const [orderCreated, setOrderCreated] = useState(false)
-  const [paymentDetails, setPaymentDetails] = useState<any>(null)
+  const [paymentDetails, setPaymentDetails] = useState<Record<string, unknown> | null>(null)
   const [loadingPaymentDetails, setLoadingPaymentDetails] = useState(false)
   const [checkoutData, setCheckoutData] = useState<any>(null)
 

@@ -118,7 +118,7 @@ export default function CartSidebar({ isOpen, onClose }: CartSidebarProps) {
                 Tu carrito está vacío
               </h3>
               <p className="text-sm md:text-base text-gray-600 dark:text-gray-400 mb-6 max-w-sm leading-relaxed">
-                Agrega productos haciendo click en "Agregar al carrito" en cualquier producto
+                Agrega productos haciendo click en &quot;Agregar al carrito&quot; en cualquier producto
               </p>
               <Button 
                 onClick={onClose} 
