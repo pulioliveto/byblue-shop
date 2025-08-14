@@ -6,6 +6,7 @@ import { useEffect, useState } from "react"
 import CheckoutSummary from "@/components/checkout/CheckoutSummary"
 import ShippingForm from "@/components/checkout/ShippingForm"
 import PaymentSection from "@/components/checkout/PaymentSection"
+import TestingHelper from "@/components/TestingHelper"
 import { Button } from "@/components/ui/button"
 import { ArrowLeft, Shield, Truck, CreditCard } from "lucide-react"
 import { toast } from "sonner"
@@ -15,6 +16,7 @@ export default function CheckoutPage() {
   const router = useRouter()
   const [currentStep, setCurrentStep] = useState(1)
   const [shippingData, setShippingData] = useState(null)
+  const [shippingMethod, setShippingMethod] = useState({ type: "standard", cost: 5000, name: "Envío estándar" })
   const [paymentData, setPaymentData] = useState(null)
 
   // Redirigir si el carrito está vacío
@@ -60,6 +62,15 @@ export default function CheckoutPage() {
 
   const handleShippingSubmit = (data: any) => {
     setShippingData(data)
+    
+    // Actualizar el método de envío según la selección
+    const selectedShipping = data.shippingMethod === 'standard' 
+      ? { type: "standard", cost: 5000, name: "Envío estándar" }
+      : data.shippingMethod === 'express'
+      ? { type: "express", cost: 8000, name: "Envío express" }
+      : { type: "pickup", cost: 0, name: "Retiro en sucursal" }
+    
+    setShippingMethod(selectedShipping)
     handleNextStep()
   }
 
@@ -203,7 +214,8 @@ export default function CheckoutPage() {
                 <PaymentSection 
                   onSubmit={handlePaymentSubmit}
                   shippingData={shippingData}
-                  orderTotal={state.total}
+                  shippingMethod={shippingMethod}
+                  orderTotal={state.total + shippingMethod.cost}
                 />
                 <div className="flex justify-between mt-6">
                   <Button
@@ -234,9 +246,14 @@ export default function CheckoutPage() {
 
               {/* Shipping */}
               <div className="flex justify-between text-sm mb-2">
-                <span className="text-gray-600 dark:text-gray-400">Envío</span>
-                <span className="font-medium text-amber-600">
-                  Se calculará según ubicación
+                <span className="text-gray-600 dark:text-gray-400">
+                  {currentStep >= 2 ? shippingMethod.name : "Envío"}
+                </span>
+                <span className="font-medium">
+                  {currentStep >= 2 ? 
+                    `$${shippingMethod.cost.toLocaleString('es-AR', { minimumFractionDigits: 2 })}` : 
+                    <span className="text-amber-600">Se calculará según ubicación</span>
+                  }
                 </span>
               </div>
 
@@ -252,7 +269,7 @@ export default function CheckoutPage() {
                 <div className="flex justify-between text-lg font-bold">
                   <span>Total</span>
                   <span className="text-green-600 dark:text-green-400">
-                    ${state.total.toLocaleString('es-AR', { minimumFractionDigits: 2 })}
+                    ${(state.total + (currentStep >= 2 ? shippingMethod.cost : 0)).toLocaleString('es-AR', { minimumFractionDigits: 2 })}
                   </span>
                 </div>
               </div>
@@ -272,6 +289,9 @@ export default function CheckoutPage() {
           </div>
         </div>
       </div>
+      
+      {/* Helper para testing - solo en desarrollo */}
+      <TestingHelper />
     </div>
   )
 }

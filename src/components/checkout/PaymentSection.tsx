@@ -1,17 +1,23 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card } from "@/components/ui/card"
-import { CreditCard, Shield, Banknote, Building2 } from "lucide-react"
+import { CreditCard, Shield, Banknote, Building2, ExternalLink } from "lucide-react"
 import { toast } from "sonner"
 import { formatPrice } from "@/lib/utils"
 import { ShippingData } from "./ShippingForm"
+import { useCart } from "@/contexts/CartContext"
 
 interface PaymentSectionProps {
   onSubmit: (data: PaymentData) => void
   shippingData: ShippingData | null
+  shippingMethod: {
+    type: string
+    cost: number
+    name: string
+  }
   orderTotal: number
 }
 
@@ -49,7 +55,8 @@ const paymentMethods = [
   }
 ]
 
-export default function PaymentSection({ onSubmit, shippingData, orderTotal }: PaymentSectionProps) {
+export default function PaymentSection({ onSubmit, shippingData, shippingMethod, orderTotal }: PaymentSectionProps) {
+  const { state } = useCart()
   const [paymentMethod, setPaymentMethod] = useState<'card' | 'transfer' | 'mercadopago'>('mercadopago')
   const [cardData, setCardData] = useState({
     number: '',
@@ -59,6 +66,75 @@ export default function PaymentSection({ onSubmit, shippingData, orderTotal }: P
   })
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [isProcessing, setIsProcessing] = useState(false)
+  const [paymentWindow, setPaymentWindow] = useState<Window | null>(null)
+  const [isWaitingForPayment, setIsWaitingForPayment] = useState(false)
+  const [preferenceId, setPreferenceId] = useState<string>('')
+  const [paymentCheckTimer, setPaymentCheckTimer] = useState<NodeJS.Timeout | null>(null)
+
+  useEffect(() => {
+    const handleMessage = (event: MessageEvent) => {
+      console.log('=== PAYMENT MESSAGE RECEIVED ===')
+      console.log('Event origin:', event.origin)
+      console.log('Window origin:', window.location.origin)
+      console.log('Message data:', event.data)
+      
+      // Verificar que el mensaje venga de nuestro dominio
+      if (event.origin !== window.location.origin) {
+        console.log('Message rejected - wrong origin')
+        return
+      }
+      
+      if (event.data.type === 'MERCADOPAGO_PAYMENT_RESULT') {
+        console.log('Processing MercadoPago payment result')
+        const { paymentId, status, externalReference, success, isPending } = event.data.data
+        
+        console.log('Payment data:', { paymentId, status, externalReference, success, isPending })
+        
+        setIsWaitingForPayment(false)
+        setPaymentWindow(null)
+        
+        if (success) {
+          toast.success('¡Pago completado exitosamente!')
+          // Redirigir a la página de éxito con los datos del pago
+          const params = new URLSearchParams()
+          if (paymentId) params.set('payment_id', paymentId)
+          if (status) params.set('status', status)
+          if (externalReference) params.set('external_reference', externalReference)
+          
+          const successUrl = `/checkout/success?${params.toString()}`
+          console.log('Redirecting to success:', successUrl)
+          window.location.href = successUrl
+        } else if (isPending) {
+          toast.info('Tu pago está pendiente. Te hemos generado un código para completarlo.')
+          // Redirigir a la página de pago pendiente
+          const params = new URLSearchParams()
+          if (paymentId) params.set('payment_id', paymentId)
+          if (status) params.set('status', status)
+          if (externalReference) params.set('external_reference', externalReference)
+          
+          const pendingUrl = `/checkout/pending?${params.toString()}`
+          console.log('Redirecting to pending:', pendingUrl)
+          window.location.href = pendingUrl
+        } else {
+          console.log('Payment failed or rejected')
+          toast.error('El pago no pudo ser procesado. Inténtalo nuevamente.')
+        }
+      }
+    }
+
+    console.log('Adding message event listener')
+    window.addEventListener('message', handleMessage)
+    
+    return () => {
+      console.log('Removing message event listener')
+      window.removeEventListener('message', handleMessage)
+      
+      // Limpiar timer de polling si existe
+      if (paymentCheckTimer) {
+        clearInterval(paymentCheckTimer)
+      }
+    }
+  }, [])
 
   const validateCardData = () => {
     const newErrors: Record<string, string> = {}
@@ -93,20 +169,253 @@ export default function PaymentSection({ onSubmit, shippingData, orderTotal }: P
     setIsProcessing(true)
 
     try {
-      // Simular procesamiento
-      await new Promise(resolve => setTimeout(resolve, 2000))
+      if (paymentMethod === 'mercadopago') {
+        // Crear preferencia de MercadoPago con datos validados
+        const items = state.items.map(item => ({
+          id: String(item._id),
+          title: String(item.name || 'Producto'),
+          description: `${item.brand || 'Sin marca'} - ${item.category || 'Sin categoría'}`,
+          picture_url: item.image || '',
+          category_id: item.category || 'others',
+          quantity: Number(item.quantity) || 1,
+          currency_id: 'ARS',
+          unit_price: Number(item.price) || 0
+        }))
 
-      const paymentData: PaymentData = {
-        method: paymentMethod,
-        ...(paymentMethod === 'card' && { cardData })
+        // Agregar el envío como un item adicional si tiene costo
+        if (shippingMethod.cost > 0) {
+          items.push({
+            id: 'shipping',
+            title: String(shippingMethod.name),
+            description: 'Costo de envío',
+            picture_url: '',
+            category_id: 'shipping',
+            quantity: 1,
+            currency_id: 'ARS',
+            unit_price: Number(shippingMethod.cost)
+          })
+        }
+
+        // Preparar datos del comprador
+        const payerData: any = {}
+        if (shippingData?.personalInfo?.email) {
+          payerData.email = String(shippingData.personalInfo.email)
+        }
+        if (shippingData?.personalInfo?.firstName) {
+          payerData.name = String(shippingData.personalInfo.firstName)
+        }
+        if (shippingData?.personalInfo?.lastName) {
+          payerData.surname = String(shippingData.personalInfo.lastName)
+        }
+        if (shippingData?.personalInfo?.phone) {
+          payerData.phone = {
+            area_code: '',
+            number: String(shippingData.personalInfo.phone)
+          }
+        }
+
+        // Crear el objeto de preferencia
+        const preferenceData = {
+          items,
+          payer: Object.keys(payerData).length > 0 ? payerData : undefined
+        }
+
+        const response = await fetch('/api/mercadopago/create-preference', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(preferenceData)
+        })
+
+        const data = await response.json()
+
+        if (response.ok) {
+          console.log('=== OPENING MERCADOPAGO POPUP ===')
+          console.log('MercadoPago URL:', data.init_point)
+          console.log('Preference ID:', data.id)
+          console.log('External Reference:', data.external_reference)
+          
+          // Guardar el preference ID para checking
+          setPreferenceId(data.external_reference || data.id)
+          
+          // Para testing, también permitir redirección directa presionando Shift
+          if (window.event && (window.event as KeyboardEvent).shiftKey) {
+            console.log('Shift key detected, redirecting directly instead of popup')
+            window.location.href = data.init_point
+            return
+          }
+          
+          // Abrir MercadoPago en nueva ventana
+          const newWindow = window.open(
+            data.init_point,
+            'mercadopago',
+            'width=800,height=600,scrollbars=yes,resizable=yes,status=yes,location=yes,toolbar=no,menubar=no'
+          )
+          
+          if (newWindow) {
+            console.log('Popup window opened successfully')
+            setPaymentWindow(newWindow)
+            setIsWaitingForPayment(true)
+            setIsProcessing(false)
+            
+            // Iniciar polling para verificar el estado del pago
+            startPaymentPolling(data.external_reference || data.id)
+            
+            // Monitorear cuando se cierra la ventana
+            const timer = setInterval(() => {
+              if (newWindow.closed) {
+                console.log('Popup window was closed')
+                clearInterval(timer)
+                setIsWaitingForPayment(false)
+                setPaymentWindow(null)
+                
+                // Dar un poco más de tiempo para el polling
+                setTimeout(() => {
+                  checkPaymentStatus()
+                }, 2000)
+              }
+            }, 1000)
+          } else {
+            console.error('Failed to open popup window')
+            console.log('Popup blocked, redirecting directly')
+            // Si el popup está bloqueado, redirigir directamente
+            window.location.href = data.init_point
+          }
+          return
+        } else {
+          console.error('Error from MercadoPago API:', data)
+          throw new Error(data.error || 'Error creando preferencia de pago')
+        }
+      } else {
+        // Simular procesamiento para otros métodos
+        await new Promise(resolve => setTimeout(resolve, 2000))
+
+        const paymentData: PaymentData = {
+          method: paymentMethod,
+          ...(paymentMethod === 'card' && { cardData })
+        }
+
+        onSubmit(paymentData)
+        toast.success('¡Pago procesado correctamente!')
       }
-
-      onSubmit(paymentData)
-      toast.success('¡Pago procesado correctamente!')
     } catch (error) {
-      toast.error('Error al procesar el pago')
+      console.error('Error processing payment:', error)
+      toast.error(error instanceof Error ? error.message : 'Error al procesar el pago')
     } finally {
-      setIsProcessing(false)
+      if (paymentMethod !== 'mercadopago' || !paymentWindow) {
+        setIsProcessing(false)
+      }
+    }
+  }
+
+  const checkPaymentStatus = async () => {
+    console.log('=== CHECKING PAYMENT STATUS ===')
+    try {
+      // En este punto, si la ventana se cerró sin mensaje, puede que el usuario haya cerrado manualmente
+      // o que haya habido un problema con la comunicación
+      toast.info('Verificando el estado de tu pago...', {
+        duration: 3000
+      })
+      
+      // Si tenemos preference ID, verificar el estado del pago
+      if (preferenceId) {
+        console.log('Checking preference:', preferenceId)
+        checkPaymentByPreference(preferenceId)
+      } else {
+        // Simular verificación después de 3 segundos
+        setTimeout(() => {
+          console.log('Payment status check completed')
+          toast.info('Si completaste el pago, serás redirigido automáticamente. Si no, puedes intentar nuevamente.', {
+            duration: 5000
+          })
+        }, 3000)
+      }
+    } catch (error) {
+      console.error('Error checking payment status:', error)
+    }
+  }
+
+  const startPaymentPolling = (preferenceId: string) => {
+    console.log('Starting payment polling for:', preferenceId)
+    
+    // Verificar cada 3 segundos por hasta 2 minutos
+    let attempts = 0
+    const maxAttempts = 40 // 2 minutos
+    
+    const timer = setInterval(async () => {
+      attempts++
+      console.log(`Payment polling attempt ${attempts}/${maxAttempts}`)
+      
+      try {
+        const success = await checkPaymentByPreference(preferenceId)
+        if (success || attempts >= maxAttempts) {
+          clearInterval(timer)
+          setPaymentCheckTimer(null)
+          if (!success && attempts >= maxAttempts) {
+            console.log('Payment polling timeout')
+          }
+        }
+      } catch (error) {
+        console.error('Error in polling:', error)
+      }
+    }, 3000)
+    
+    setPaymentCheckTimer(timer)
+  }
+
+  const checkPaymentByPreference = async (preferenceId: string): Promise<boolean> => {
+    try {
+      const response = await fetch(`/api/mercadopago/check-preference?preference_id=${preferenceId}`)
+      const data = await response.json()
+      
+      console.log('Payment check result:', data)
+      
+      if (data.found && data.payment) {
+        const { status, id: paymentId } = data.payment
+        console.log('Payment found:', { status, paymentId })
+        
+        // Limpiar el polling
+        if (paymentCheckTimer) {
+          clearInterval(paymentCheckTimer)
+          setPaymentCheckTimer(null)
+        }
+        
+        // Redirigir según el estado
+        if (status === 'approved') {
+          toast.success('¡Pago completado exitosamente!')
+          const params = new URLSearchParams()
+          params.set('payment_id', paymentId.toString())
+          params.set('status', status)
+          params.set('external_reference', preferenceId)
+          
+          window.location.href = `/checkout/success?${params.toString()}`
+          return true
+        } else if (status === 'pending' || status === 'in_process') {
+          toast.info('Tu pago está pendiente de confirmación')
+          const params = new URLSearchParams()
+          params.set('payment_id', paymentId.toString())
+          params.set('status', status)
+          params.set('external_reference', preferenceId)
+          
+          window.location.href = `/checkout/pending?${params.toString()}`
+          return true
+        } else if (status === 'rejected' || status === 'cancelled') {
+          toast.error('El pago fue rechazado')
+          const params = new URLSearchParams()
+          params.set('payment_id', paymentId.toString())
+          params.set('status', status)
+          params.set('external_reference', preferenceId)
+          
+          window.location.href = `/checkout/failure?${params.toString()}`
+          return true
+        }
+      }
+      
+      return false
+    } catch (error) {
+      console.error('Error checking payment by preference:', error)
+      return false
     }
   }
 
@@ -152,10 +461,19 @@ export default function PaymentSection({ onSubmit, shippingData, orderTotal }: P
               <p><strong>Método:</strong> Retiro en sucursal</p>
             )}
             
-            <div className="pt-2 border-t border-gray-300 dark:border-gray-600 mt-3">
-              <p className="text-lg font-bold text-green-600 dark:text-green-400">
-                <strong>Total a pagar: {formatPrice(orderTotal)}</strong>
-              </p>
+            <div className="pt-3 border-t border-gray-300 dark:border-gray-600 mt-3 space-y-2">
+              <div className="flex justify-between">
+                <span>Productos:</span>
+                <span>{formatPrice(orderTotal - shippingMethod.cost)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span>{shippingMethod.name}:</span>
+                <span>{shippingMethod.cost === 0 ? 'Gratis' : formatPrice(shippingMethod.cost)}</span>
+              </div>
+              <div className="flex justify-between text-lg font-bold text-green-600 dark:text-green-400 pt-2 border-t border-gray-300 dark:border-gray-600">
+                <span>Total a pagar:</span>
+                <span>{formatPrice(orderTotal)}</span>
+              </div>
             </div>
           </div>
         </div>
@@ -227,12 +545,40 @@ export default function PaymentSection({ onSubmit, shippingData, orderTotal }: P
                   Pago con MercadoPago
                 </h4>
                 <p className="text-sm text-blue-700 dark:text-blue-300">
-                  Serás redirigido a MercadoPago para completar tu pago de forma segura
+                  {isWaitingForPayment 
+                    ? 'Completa tu pago en la ventana de MercadoPago que se abrió'
+                    : 'Se abrirá una nueva ventana para completar tu pago de forma segura'
+                  }
                 </p>
               </div>
             </div>
             
-            <div className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-blue-200 dark:border-blue-700">
+            {isWaitingForPayment && (
+              <div className="bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-lg p-4 mb-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="animate-spin w-4 h-4 border-2 border-orange-500 border-t-transparent rounded-full"></div>
+                  <span className="text-orange-800 dark:text-orange-200 font-medium">
+                    Esperando confirmación de pago...
+                  </span>
+                </div>
+                <p className="text-sm text-orange-700 dark:text-orange-300">
+                  Complete su pago en la ventana de MercadoPago. No cierre esta página hasta confirmar el pago.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (paymentWindow && !paymentWindow.closed) {
+                      paymentWindow.focus()
+                    }
+                  }}
+                  className="mt-2 text-sm text-orange-600 hover:text-orange-800 underline"
+                >
+                  Volver a la ventana de pago
+                </button>
+              </div>
+            )}
+            
+            <div className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-blue-200 dark:border-blue-700 mb-4">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-sm text-gray-600 dark:text-gray-400">Total a pagar:</span>
                 <span className="text-xl font-bold text-green-600 dark:text-green-400">
@@ -240,8 +586,27 @@ export default function PaymentSection({ onSubmit, shippingData, orderTotal }: P
                 </span>
               </div>
               <p className="text-xs text-gray-500 dark:text-gray-400">
-                Podrás pagar con tarjetas de crédito/débito, efectivo, transferencia bancaria y más
+                Incluye productos ({formatPrice(orderTotal - shippingMethod.cost)}) + {shippingMethod.name.toLowerCase()} ({shippingMethod.cost === 0 ? 'gratis' : formatPrice(shippingMethod.cost)})
               </p>
+            </div>
+
+            <div className="space-y-2 text-sm text-blue-700 dark:text-blue-300">
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 bg-blue-600 rounded-full"></div>
+                <span>Tarjetas de crédito y débito</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 bg-blue-600 rounded-full"></div>
+                <span>Transferencia bancaria</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 bg-blue-600 rounded-full"></div>
+                <span>Pago en efectivo (Rapipago, Pago Fácil)</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 bg-blue-600 rounded-full"></div>
+                <span>Hasta 12 cuotas sin interés</span>
+              </div>
             </div>
           </div>
         )}
@@ -383,13 +748,23 @@ export default function PaymentSection({ onSubmit, shippingData, orderTotal }: P
           <Button
             type="submit"
             size="lg"
-            disabled={isProcessing}
+            disabled={isProcessing || isWaitingForPayment}
             className="bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700 min-w-[200px]"
           >
             {isProcessing ? (
               <div className="flex items-center gap-2">
                 <div className="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full"></div>
-                Procesando...
+                {paymentMethod === 'mercadopago' ? 'Abriendo ventana de pago...' : 'Procesando...'}
+              </div>
+            ) : isWaitingForPayment ? (
+              <div className="flex items-center gap-2">
+                <div className="animate-pulse w-4 h-4 bg-white rounded-full"></div>
+                Esperando pago en MercadoPago...
+              </div>
+            ) : paymentMethod === 'mercadopago' ? (
+              <div className="flex items-center gap-2">
+                <ExternalLink className="w-4 h-4" />
+                Pagar con MercadoPago - {formatPrice(orderTotal)}
               </div>
             ) : (
               `Pagar ${formatPrice(orderTotal)}`

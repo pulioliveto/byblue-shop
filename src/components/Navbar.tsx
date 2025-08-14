@@ -158,9 +158,12 @@ export default function Navbar() {
                     <DropdownMenuItem asChild>
                       <Link href="/profile">Mi Perfil</Link>
                     </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link href="/orders">📦 Mis Órdenes</Link>
+                    </DropdownMenuItem>
                     {hasCreadorPrivileges && (
                       <DropdownMenuItem asChild>
-                        <Link href="/orders">Todas las Órdenes</Link>
+                        <Link href="/admin/orders">🛠️ Todas las Órdenes</Link>
                       </DropdownMenuItem>
                     )}
 
