@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { CheckCircle, Package, ArrowRight, Home } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -10,7 +10,7 @@ import { useSession } from 'next-auth/react'
 import { toast } from 'sonner'
 import Link from 'next/link'
 
-export default function CheckoutSuccess() {
+function CheckoutSuccessContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const { state, clearCart } = useCart()
@@ -457,5 +457,24 @@ export default function CheckoutSuccess() {
       </Card>
       )}
     </div>
+  )
+}
+
+export default function CheckoutSuccess() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gradient-to-br from-green-50 to-emerald-100 dark:from-gray-900 dark:to-gray-800 flex items-center justify-center p-4">
+        <Card className="max-w-2xl w-full p-8 text-center">
+          <div className="flex justify-center mb-6">
+            <div className="animate-spin w-8 h-8 border-4 border-green-600 border-t-transparent rounded-full"></div>
+          </div>
+          <h1 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
+            Cargando...
+          </h1>
+        </Card>
+      </div>
+    }>
+      <CheckoutSuccessContent />
+    </Suspense>
   )
 }

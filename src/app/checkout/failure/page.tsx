@@ -1,13 +1,13 @@
 "use client"
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { XCircle, ArrowLeft, RotateCcw, Home } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import Link from 'next/link'
 
-export default function CheckoutFailure() {
+function CheckoutFailureContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [paymentInfo, setPaymentInfo] = useState<any>(null)
@@ -142,5 +142,24 @@ export default function CheckoutFailure() {
         </div>
       </Card>
     </div>
+  )
+}
+
+export default function CheckoutFailure() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gradient-to-br from-red-50 to-pink-100 dark:from-gray-900 dark:to-gray-800 flex items-center justify-center p-4">
+        <Card className="max-w-2xl w-full p-8 text-center">
+          <div className="flex justify-center mb-6">
+            <div className="animate-spin w-8 h-8 border-4 border-red-600 border-t-transparent rounded-full"></div>
+          </div>
+          <h1 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
+            Cargando...
+          </h1>
+        </Card>
+      </div>
+    }>
+      <CheckoutFailureContent />
+    </Suspense>
   )
 }
