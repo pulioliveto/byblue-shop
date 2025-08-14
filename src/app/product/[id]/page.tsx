@@ -323,6 +323,47 @@ export default function ProductDetailPage() {
                 </span>
               </div>
 
+              {/* Información de MercadoPago */}
+              <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4 border border-blue-200 dark:border-blue-800 mb-6">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="flex items-center gap-2">
+                    {/* Logo de MercadoPago */}
+                    <svg className="w-8 h-8" viewBox="0 0 200 80" fill="none">
+                      <rect width="200" height="80" fill="#00A8FF"/>
+                      <path d="M20 20h160v40H20z" fill="white"/>
+                      <text x="100" y="45" textAnchor="middle" fontSize="16" fill="#00A8FF" fontWeight="bold">
+                        MercadoPago
+                      </text>
+                    </svg>
+                    <span className="font-semibold text-blue-900 dark:text-blue-100">
+                      Pagar con MercadoPago
+                    </span>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2 text-blue-800 dark:text-blue-200">
+                      <Shield className="w-4 h-4" />
+                      <span>Compra protegida</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-blue-800 dark:text-blue-200">
+                      <span>💳</span>
+                      <span>Todas las tarjetas</span>
+                    </div>
+                  </div>
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2 text-blue-800 dark:text-blue-200">
+                      <span>💰</span>
+                      <span>Efectivo disponible</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-blue-800 dark:text-blue-200">
+                      <span>🏦</span>
+                      <span>Hasta 12 cuotas sin interés</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
               <p className="text-muted-foreground text-lg leading-relaxed mb-6">
                 {product.description}
               </p>

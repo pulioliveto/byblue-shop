@@ -7,39 +7,119 @@ import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { useCart } from '@/contexts/CartContext'
 import { useSession } from 'next-auth/react'
+import { toast } from 'sonner'
 import Link from 'next/link'
 
 export default function CheckoutSuccess() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const { state, clearCart } = useCart()
-  const { data: session } = useSession()
+  const { data: session, status } = useSession()
   const [paymentInfo, setPaymentInfo] = useState<any>(null)
   const [orderCreated, setOrderCreated] = useState(false)
   const [paymentDetails, setPaymentDetails] = useState<any>(null)
   const [loadingPaymentDetails, setLoadingPaymentDetails] = useState(false)
+  const [checkoutData, setCheckoutData] = useState<any>(null)
 
   const paymentId = searchParams.get('payment_id')
-  const status = searchParams.get('status')
+  const status_param = searchParams.get('status')
   const externalReference = searchParams.get('external_reference')
 
+  console.log('CheckoutSuccess render:', {
+    sessionStatus: status,
+    hasSession: !!session,
+    userEmail: session?.user?.email,
+    itemsLength: state.items.length,
+    orderCreated
+  })
+
   useEffect(() => {
-    // Limpiar el carrito inmediatamente cuando llegue a esta página
-    if (state.items.length > 0 && !orderCreated) {
-      createOrderAndClearCart()
+    console.log('=== MAIN EFFECT TRIGGERED ===')
+    console.log('Session status:', status, 'Session:', !!session)
+    
+    // No hacer nada hasta que la sesión se haya cargado
+    if (status === 'loading') {
+      console.log('Session is loading, waiting...')
+      return
     }
+
+    // Recuperar datos del checkout desde sessionStorage
+    const savedCheckoutData = sessionStorage.getItem('byblue-checkout-data')
+    if (savedCheckoutData) {
+      try {
+        const parsedData = JSON.parse(savedCheckoutData)
+        setCheckoutData(parsedData)
+        console.log('Checkout data recovered from sessionStorage:', parsedData)
+        console.log('Checkout data details:', JSON.stringify(parsedData, null, 2))
+      } catch (error) {
+        console.error('Error parsing checkout data:', error)
+      }
+    } else {
+      console.log('No checkout data found in sessionStorage')
+    }
+
+    console.log('Current state:', {
+      itemsLength: state.items.length,
+      orderCreated,
+      sessionEmail: session?.user?.email,
+      paymentId
+    })
 
     if (paymentId) {
       setPaymentInfo({
         id: paymentId,
-        status: status,
+        status: status_param,
         reference: externalReference
       })
       
       // Obtener detalles del pago de MercadoPago
       fetchPaymentDetails(paymentId)
     }
-  }, [paymentId, status, externalReference, state.items, orderCreated])
+  }, [paymentId, status_param, externalReference, session, status])
+
+  // UseEffect separado para manejar la creación de la orden cuando todos los datos estén listos
+  useEffect(() => {
+    console.log('=== ORDER CREATION EFFECT TRIGGERED ===')
+    console.log('Session status:', status)
+    
+    // No hacer nada si la sesión aún está cargando
+    if (status === 'loading') {
+      console.log('Session still loading, skipping order creation')
+      return
+    }
+    
+    // NUEVA CONDICIÓN: Solo crear la orden si el checkoutData ya está disponible
+    // O si hemos esperado lo suficiente y no hay checkoutData
+    const shouldCreateOrder = checkoutData !== null || (paymentId && !checkoutData)
+    
+    console.log('Checking conditions for order creation:', {
+      hasSession: !!session?.user?.email,
+      hasItems: state.items.length > 0,
+      orderNotCreated: !orderCreated,
+      hasPaymentId: !!paymentId,
+      sessionStatus: status,
+      hasCheckoutData: !!checkoutData,
+      shouldCreateOrder
+    })
+
+    if (session?.user?.email && state.items.length > 0 && !orderCreated && paymentId && shouldCreateOrder) {
+      console.log('All conditions met for order creation, calling createOrderAndClearCart')
+      createOrderAndClearCart()
+    } else {
+      console.log('Order creation skipped. Detailed reasons:', {
+        noSession: !session?.user?.email,
+        sessionEmail: session?.user?.email,
+        noItems: state.items.length === 0,
+        itemsCount: state.items.length,
+        orderAlreadyCreated: orderCreated,
+        noPaymentId: !paymentId,
+        paymentId: paymentId,
+        sessionStatus: status,
+        checkoutDataStatus: checkoutData ? 'available' : 'null',
+        shouldCreateOrder
+      })
+    }
+  }, [session, state.items, orderCreated, paymentId, status, checkoutData]) // Agregar checkoutData como dependencia
 
   const fetchPaymentDetails = async (paymentId: string) => {
     setLoadingPaymentDetails(true)
@@ -57,30 +137,97 @@ export default function CheckoutSuccess() {
   }
 
   const createOrderAndClearCart = async () => {
-    if (!session?.user?.email || state.items.length === 0) return
+    console.log('=== createOrderAndClearCart STARTED ===')
+    console.log('Session check:', {
+      hasSession: !!session,
+      userEmail: session?.user?.email,
+      itemsCount: state.items.length
+    })
+
+    if (!session?.user?.email) {
+      console.error('No user session found')
+      return
+    }
+
+    if (state.items.length === 0) {
+      console.error('No items in cart')
+      return
+    }
+
+    console.log('=== PROCEEDING WITH ORDER CREATION ===')
 
     try {
-      // Crear la orden en la base de datos
+        console.log('Creating order with data:', { 
+        items: state.items, 
+        checkoutData,
+        paymentId,
+        status: status_param 
+      })
+      
+      console.log('=== CHECKOUT DATA ANALYSIS ===')
+      console.log('checkoutData from state:', checkoutData)
+      console.log('checkoutData exists:', !!checkoutData)
+      console.log('checkoutData.shipping exists:', !!checkoutData?.shipping)
+      console.log('checkoutData.shipping details:', checkoutData?.shipping)
+      
+      // Usar datos del checkout si están disponibles, si no usar valores por defecto
+      const shipping = checkoutData?.shipping || {
+        method: 'Envío estándar',
+        type: 'standard',
+        cost: 5000,
+        address: {
+          firstName: 'Por actualizar',
+          lastName: 'Por actualizar',
+          email: session.user.email,
+          phone: 'Por actualizar',
+          street: 'Por actualizar',
+          number: '',
+          apartment: '',
+          city: 'Por actualizar',
+          province: 'Por actualizar',
+          postalCode: '0000',
+          country: 'Argentina'
+        }
+      }
+
+      console.log('=== FINAL SHIPPING DATA FOR ORDER CREATION ===')
+      console.log('shipping object:', shipping)
+      console.log('shipping method:', shipping.method)
+      console.log('shipping type:', shipping.type)
+      console.log('shipping cost:', shipping.cost)
+
+      const payment = checkoutData?.payment || {
+        method: 'mercadopago',
+        mercadoPagoId: paymentId || '',
+        externalReference: externalReference || '',
+        status: 'approved'
+      }
+
+      const totals = checkoutData?.totals || {
+        subtotal: state.total,
+        shipping: shipping.cost,
+        total: state.total + shipping.cost
+      }
+
+      // Crear la orden con el formato correcto según el modelo Order
       const orderData = {
         items: state.items.map(item => ({
           productId: item._id,
           name: item.name,
+          brand: item.brand || 'Sin marca',
+          category: item.category || 'General',
+          image: item.image || '/placeholder.jpg',
           price: item.price,
           quantity: item.quantity,
-          image: item.image || '/placeholder.jpg'
+          subtotal: item.price * item.quantity
         })),
-        total: state.total,
-        shippingAddress: {
-          street: 'Dirección por actualizar',
-          city: 'Ciudad por actualizar',
-          state: 'Estado por actualizar',
-          zipCode: '00000',
-          country: 'Argentina'
-        },
-        paymentStatus: 'completed',
-        paymentId: paymentId || '',
-        paymentMethod: 'mercadopago'
+        shipping,
+        payment,
+        totals,
+        notes: ''
       }
+
+      console.log('Order data being sent:', orderData)
 
       const response = await fetch('/api/orders', {
         method: 'POST',
@@ -90,21 +237,54 @@ export default function CheckoutSuccess() {
         body: JSON.stringify(orderData),
       })
 
-      if (response.ok) {
+      console.log('Response status:', response.status)
+      console.log('Response ok:', response.ok)
+
+      const result = await response.json()
+      console.log('Order creation response:', result)
+
+      if (response.ok && result.success) {
         // Limpiar el carrito después de crear la orden exitosamente
         clearCart()
         setOrderCreated(true)
+        
+        // Limpiar datos del checkout de sessionStorage
+        sessionStorage.removeItem('byblue-checkout-data')
+        
+        toast.success('¡Orden creada exitosamente!')
+        console.log('Order created successfully:', result.order)
+      } else {
+        console.error('Error creating order:', result)
+        throw new Error(result.error || 'Error creating order')
       }
     } catch (error) {
       console.error('Error creating order:', error)
+      toast.error('Error al crear la orden, pero tu pago fue exitoso')
+      
       // Aún así limpiar el carrito si el pago fue exitoso
       clearCart()
       setOrderCreated(true)
+      
+      // Limpiar datos del checkout de sessionStorage
+      sessionStorage.removeItem('byblue-checkout-data')
     }
   }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 to-emerald-100 dark:from-gray-900 dark:to-gray-800 flex items-center justify-center p-4">
+      {status === 'loading' ? (
+        <Card className="max-w-2xl w-full p-8 text-center">
+          <div className="flex justify-center mb-6">
+            <div className="animate-spin w-8 h-8 border-4 border-green-600 border-t-transparent rounded-full"></div>
+          </div>
+          <h1 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
+            Cargando...
+          </h1>
+          <p className="text-gray-600 dark:text-gray-400">
+            Estamos procesando tu compra
+          </p>
+        </Card>
+      ) : (
       <Card className="max-w-2xl w-full p-8 text-center">
         <div className="flex justify-center mb-6">
           <div className="bg-green-100 dark:bg-green-900/20 rounded-full p-4">
@@ -275,6 +455,7 @@ export default function CheckoutSuccess() {
           </p>
         </div>
       </Card>
+      )}
     </div>
   )
 }

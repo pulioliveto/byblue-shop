@@ -64,6 +64,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Crear la preferencia simplificada (máxima compatibilidad)
+    const externalRef = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`
     const preferenceData: any = {
       items: validItems,
       back_urls: {
@@ -71,7 +72,7 @@ export async function POST(request: NextRequest) {
         failure: `${process.env.NEXTAUTH_URL}/checkout/callback`,
         pending: `${process.env.NEXTAUTH_URL}/checkout/callback`
       },
-      external_reference: `ORDER_${Date.now()}`
+      external_reference: externalRef
     }
 
     // Solo agregar payer si tiene email válido
@@ -101,12 +102,13 @@ export async function POST(request: NextRequest) {
     console.log('MercadoPago preference created successfully:', result.id)
     console.log('Init point:', result.init_point)
     console.log('Sandbox init point:', result.sandbox_init_point)
+    console.log('External reference:', externalRef)
 
     return NextResponse.json({
       id: result.id,
       init_point: result.init_point,
       sandbox_init_point: result.sandbox_init_point,
-      external_reference: preferenceData.external_reference
+      external_reference: externalRef
     })
 
   } catch (error) {

@@ -97,6 +97,14 @@ export default function ProductListItem({ product, index, categories }: ProductL
                 -{product.discountPercentage}%
               </Badge>
             )}
+            {product.stock === 0 && (
+              <Badge className="mb-2 bg-muted text-muted-foreground border-0 font-medium">Sin stock</Badge>
+            )}
+            {product.stock === 1 && (
+              <Badge className="mb-2 bg-gradient-to-r from-red-500 to-red-600 text-white border-0 shadow-lg font-semibold animate-pulse">
+                ÚLTIMO DISPONIBLE
+              </Badge>
+            )}
             <div className="flex flex-col items-end gap-1">
               {product.originalPrice && (
                 <span className="text-sm text-muted-foreground line-through font-medium">

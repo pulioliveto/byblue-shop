@@ -39,7 +39,11 @@ const OrderSchema = new mongoose.Schema({
   orderNumber: {
     type: String,
     required: true,
-    unique: true
+    unique: true,
+    default: function() {
+      // Generar por defecto si no se proporciona
+      return `BP${Date.now()}${Math.floor(Math.random() * 9999).toString().padStart(4, '0')}`
+    }
   },
   userEmail: {
     type: String,
@@ -118,11 +122,11 @@ OrderSchema.pre('save', function(next) {
   next()
 })
 
-// Generar número de orden automáticamente
-OrderSchema.pre('save', async function(next) {
+// Solo generar orderNumber si no existe (el API ya lo genera)
+OrderSchema.pre('save', function(next) {
   if (!this.orderNumber) {
-    const count = await mongoose.model('Order').countDocuments()
-    this.orderNumber = `BP${Date.now()}${(count + 1).toString().padStart(4, '0')}`
+    // Fallback simple si no se proporcionó
+    this.orderNumber = `BP${Date.now()}${Math.floor(Math.random() * 9999).toString().padStart(4, '0')}`
   }
   next()
 })

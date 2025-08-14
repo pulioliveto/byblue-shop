@@ -76,7 +76,6 @@ export default function OrdersPage() {
   const { data: session, status } = useSession()
   const [orders, setOrders] = useState<Order[]>([])
   const [loading, setLoading] = useState(true)
-  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null)
 
   useEffect(() => {
     if (session?.user) {
@@ -234,84 +233,17 @@ export default function OrdersPage() {
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => setSelectedOrder(order)}
+                      asChild
                     >
-                      <Eye className="w-4 h-4 mr-1" />
-                      Ver detalles
+                      <Link href={`/orders/${order._id}`}>
+                        <Eye className="w-4 h-4 mr-1" />
+                        Ver detalles
+                      </Link>
                     </Button>
                   </div>
                 </Card>
               )
             })}
-          </div>
-        )}
-
-        {/* Modal de detalles de orden */}
-        {selectedOrder && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-            <Card className="max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-              <div className="p-6">
-                <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-xl font-bold">Orden #{selectedOrder.orderNumber}</h2>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setSelectedOrder(null)}
-                  >
-                    <X className="w-4 h-4" />
-                  </Button>
-                </div>
-
-                {/* Detalles completos aquí */}
-                <div className="space-y-6">
-                  {/* Items */}
-                  <div>
-                    <h3 className="font-semibold mb-3">Productos</h3>
-                    <div className="space-y-3">
-                      {selectedOrder.items.map((item) => (
-                        <div key={item.productId} className="flex items-center gap-4 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                          <div className="relative w-16 h-16">
-                            <Image
-                              src={item.image || '/placeholder.svg'}
-                              alt={item.name}
-                              fill
-                              className="object-cover rounded"
-                            />
-                          </div>
-                          <div className="flex-1">
-                            <h4 className="font-medium">{item.name}</h4>
-                            <p className="text-sm text-gray-600 dark:text-gray-400">
-                              {item.brand} • {item.category}
-                            </p>
-                            <p className="text-sm">
-                              {item.quantity}x {formatPrice(item.price)} = {formatPrice(item.subtotal)}
-                            </p>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Totales */}
-                  <div className="border-t pt-4">
-                    <div className="space-y-2">
-                      <div className="flex justify-between">
-                        <span>Subtotal:</span>
-                        <span>{formatPrice(selectedOrder.totals.subtotal)}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span>Envío:</span>
-                        <span>{selectedOrder.totals.shipping === 0 ? 'Gratis' : formatPrice(selectedOrder.totals.shipping)}</span>
-                      </div>
-                      <div className="flex justify-between font-bold text-lg border-t pt-2">
-                        <span>Total:</span>
-                        <span>{formatPrice(selectedOrder.totals.total)}</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </Card>
           </div>
         )}
       </div>

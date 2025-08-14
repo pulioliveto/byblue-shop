@@ -57,6 +57,11 @@ export default function ProductCard({ product, index, categories }: ProductCardP
             {product.stock === 0 && (
               <Badge className="absolute top-4 left-4 bg-muted text-muted-foreground border-0 font-medium">Sin stock</Badge>
             )}
+            {product.stock === 1 && (
+              <Badge className="absolute top-4 left-4 bg-gradient-to-r from-red-500 to-red-600 text-white border-0 shadow-lg font-semibold animate-pulse">
+                ÚLTIMO DISPONIBLE
+              </Badge>
+            )}
 
             <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-500">
               <Button

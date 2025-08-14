@@ -19,6 +19,10 @@ export default function CheckoutPage() {
   const [shippingMethod, setShippingMethod] = useState({ type: "standard", cost: 5000, name: "Envío estándar" })
   const [paymentData, setPaymentData] = useState(null)
 
+  console.log(`=== CHECKOUT PAGE - STEP ${currentStep} ===`)
+  console.log('Current shippingMethod:', shippingMethod)
+  console.log('Current shippingData:', shippingData)
+
   // Redirigir si el carrito está vacío
   useEffect(() => {
     if (state.items.length === 0) {
@@ -60,17 +64,19 @@ export default function CheckoutPage() {
     }
   }
 
+  const handleShippingMethodChange = (method: { type: string; cost: number; name: string }) => {
+    console.log("=== SHIPPING METHOD CHANGED IMMEDIATELY ===", method)
+    setShippingMethod(method)
+  }
+
   const handleShippingSubmit = (data: any) => {
+    console.log("=== SHIPPING DATA RECEIVED ===", data)
+    console.log("=== CURRENT SHIPPING METHOD ===", shippingMethod)
     setShippingData(data)
     
-    // Actualizar el método de envío según la selección
-    const selectedShipping = data.shippingMethod === 'standard' 
-      ? { type: "standard", cost: 5000, name: "Envío estándar" }
-      : data.shippingMethod === 'express'
-      ? { type: "express", cost: 8000, name: "Envío express" }
-      : { type: "pickup", cost: 0, name: "Retiro en sucursal" }
-    
-    setShippingMethod(selectedShipping)
+    // Ya no necesitamos actualizar el shippingMethod aquí porque
+    // se actualiza en tiempo real con handleShippingMethodChange
+    console.log("=== FINAL SHIPPING METHOD FOR ORDER ===", shippingMethod)
     handleNextStep()
   }
 
@@ -193,7 +199,10 @@ export default function CheckoutPage() {
                   <Truck className="w-5 h-5 text-blue-600" />
                   Información de envío
                 </h2>
-                <ShippingForm onSubmit={handleShippingSubmit} />
+                <ShippingForm 
+                  onSubmit={handleShippingSubmit} 
+                  onShippingMethodChange={handleShippingMethodChange}
+                />
                 <div className="flex justify-between mt-6">
                   <Button
                     variant="outline"

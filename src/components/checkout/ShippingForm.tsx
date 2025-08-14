@@ -9,6 +9,7 @@ import { toast } from "sonner"
 
 interface ShippingFormProps {
   onSubmit: (data: ShippingData) => void
+  onShippingMethodChange?: (method: { type: string; cost: number; name: string }) => void
 }
 
 export interface ShippingData {
@@ -63,7 +64,7 @@ const shippingOptions = [
   }
 ]
 
-export default function ShippingForm({ onSubmit }: ShippingFormProps) {
+export default function ShippingForm({ onSubmit, onShippingMethodChange }: ShippingFormProps) {
   const [formData, setFormData] = useState<ShippingData>({
     personalInfo: {
       firstName: '',
@@ -132,6 +133,7 @@ export default function ShippingForm({ onSubmit }: ShippingFormProps) {
     e.preventDefault()
     
     if (validateForm()) {
+      console.log("=== SHIPPING FORM DATA ===", formData)
       onSubmit(formData)
       toast.success('Información de envío guardada correctamente')
     } else {
@@ -162,6 +164,21 @@ export default function ShippingForm({ onSubmit }: ShippingFormProps) {
     }))
     if (errors[field]) {
       setErrors(prev => ({ ...prev, [field]: '' }))
+    }
+  }
+
+  const handleShippingMethodChange = (method: 'standard' | 'express' | 'pickup') => {
+    setFormData(prev => ({ ...prev, shippingMethod: method }))
+    
+    // Notificar al componente padre inmediatamente
+    if (onShippingMethodChange) {
+      const shippingMethodData = method === 'standard' 
+        ? { type: "standard", cost: 5000, name: "Envío estándar" }
+        : method === 'express'
+        ? { type: "express", cost: 8000, name: "Envío express" }
+        : { type: "pickup", cost: 0, name: "Retiro en sucursal" }
+      
+      onShippingMethodChange(shippingMethodData)
     }
   }
 
@@ -271,7 +288,7 @@ export default function ShippingForm({ onSubmit }: ShippingFormProps) {
                     ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
                     : 'hover:border-gray-300'
                 }`}
-                onClick={() => setFormData(prev => ({ ...prev, shippingMethod: option.id as any }))}
+                onClick={() => handleShippingMethodChange(option.id as 'standard' | 'express' | 'pickup')}
               >
                 <div className="flex flex-col items-center text-center space-y-2">
                   <Icon className={`w-6 h-6 ${
