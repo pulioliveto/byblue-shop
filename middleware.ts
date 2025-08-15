@@ -1,14 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { securityMiddleware, securityHeaders } from './src/lib/security/middleware'
+import { securityHeaders } from './src/lib/security/middleware'
 
 export async function middleware(request: NextRequest) {
-  // Aplicar middleware de seguridad
-  const securityResult = await securityMiddleware(request)
-  if (securityResult) {
-    return securityHeaders(securityResult)
-  }
-  
-  // Continuar con el request normal
+  // Solo aplicar headers de seguridad, sin middleware de seguridad estricto
   const response = NextResponse.next()
   
   // Aplicar headers de seguridad a todas las respuestas
@@ -24,6 +18,6 @@ export const config = {
      * - _next/image (image optimization files)
      * - favicon.ico (favicon file)
      */
-    '/((?!_next/static|_next/image|favicon.ico).*)',
+    '/((?!api|_next/static|_next/image|favicon.ico).*)',
   ],
 }

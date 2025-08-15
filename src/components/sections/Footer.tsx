@@ -8,25 +8,22 @@ const footerSections = [
   {
     title: "Productos",
     links: [
-      { href: "/shop/smartphones", label: "Smartphones" },
-      { href: "/shop/laptops", label: "Laptops" },
-      { href: "/shop/accesorios", label: "Accesorios" }
+      { href: "/shop", label: "Tienda" },
     ]
   },
   {
     title: "Soporte",
     links: [
-      { href: "/support", label: "Centro de ayuda" },
       { href: "/contact", label: "Contacto" },
-      { href: "/warranty", label: "Garantía" }
+      { href: "/orders", label: "Mis Pedidos" },
+      { href: "/contact", label: "Centro de Ayuda" }
     ]
   },
   {
-    title: "Empresa",
+    title: "Legal",
     links: [
-      { href: "/about", label: "Acerca de" },
       { href: "/privacy", label: "Privacidad" },
-      { href: "/terms", label: "Términos" }
+      { href: "/terms", label: "Términos y Condiciones" }
     ]
   }
 ];
