@@ -25,9 +25,9 @@ export default withAuth(
           return true;
         }
         
-        // Rutas de órdenes - solo CREADOR puede ver
+        // Rutas de órdenes - cualquier usuario autenticado puede ver sus órdenes
         if (pathname.startsWith('/orders')) {
-          return token?.role === 'CREADOR';
+          return true; // Solo requiere estar autenticado
         }
         
         // Rutas específicas de CREADOR (gestión de usuarios y roles)

@@ -7,6 +7,7 @@ import { CartProvider } from "@/contexts/CartContext"
 import Navbar from "@/components/Navbar"
 import { Footer } from "@/components/sections"
 import { Toaster } from "sonner"
+import WhatsAppFloat from "@/components/WhatsAppFloat"
 
 const workSans = Work_Sans({
   subsets: ["latin"],
@@ -42,6 +43,7 @@ export default function RootLayout({
                 {children}
               </main>
               <Footer />
+              <WhatsAppFloat />
             </div>
             <Toaster 
               position="top-right"

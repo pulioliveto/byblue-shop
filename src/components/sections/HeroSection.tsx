@@ -58,17 +58,9 @@ export default function HeroSection() {
                 className="bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90 text-white font-semibold group shadow-lg hover:shadow-xl transition-all duration-300"
               >
                 <Link href="/shop" className="flex items-center">
-                  Descúbrelo
+                  Nuestros productos
                   <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
                 </Link>
-              </Button>
-              <Button
-                asChild
-                variant="outline"
-                size="lg"
-                className="border-primary/50 hover:bg-primary/10 font-semibold bg-background/80 backdrop-blur-sm"
-              >
-                <Link href="/shop/smartphones">Ver iPhone 15 Pro</Link>
               </Button>
             </motion.div>
 

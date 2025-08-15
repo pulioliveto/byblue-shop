@@ -15,7 +15,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { ShoppingBag, Search, Menu, X, User } from "lucide-react"
-import { useState } from "react"
+import { useState, useEffect, useRef } from "react"
 import CartComponent from "./cart/CartComponent"
 
 export default function Navbar() {
@@ -23,6 +23,7 @@ export default function Navbar() {
   const { refreshSession } = useRefreshSession()
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [imageError, setImageError] = useState(false)
+  const navRef = useRef<HTMLElement>(null)
 
   const handleSignOut = () => {
     signOut({ callbackUrl: "/" })
@@ -39,8 +40,30 @@ export default function Navbar() {
     }
   }
 
+  // Cerrar menú móvil cuando se hace click fuera
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (navRef.current && !navRef.current.contains(event.target as Node) && isMenuOpen) {
+        setIsMenuOpen(false)
+      }
+    }
+
+    if (isMenuOpen) {
+      document.addEventListener('mousedown', handleClickOutside)
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [isMenuOpen])
+
+  // Cerrar menú móvil cuando se cambia de ruta
+  const handleLinkClick = () => {
+    setIsMenuOpen(false)
+  }
+
   return (
-    <nav className="fixed top-0 w-full z-50 glass-effect border-b border-primary/20">
+    <nav ref={navRef} className="fixed top-0 w-full z-50 glass-effect border-b border-primary/20">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
@@ -64,22 +87,10 @@ export default function Navbar() {
               Tienda
             </Link>
             <Link
-              href="/shop/smartphones"
+              href="/contact"
               className="text-muted-foreground hover:text-primary transition-colors duration-200 font-medium"
             >
-              Smartphones
-            </Link>
-            <Link
-              href="/shop/laptops"
-              className="text-muted-foreground hover:text-primary transition-colors duration-200 font-medium"
-            >
-              Laptops
-            </Link>
-            <Link
-              href="/shop/accesorios"
-              className="text-muted-foreground hover:text-primary transition-colors duration-200 font-medium"
-            >
-              Accesorios
+              Contacto
             </Link>
           </div>
 
@@ -221,26 +232,19 @@ export default function Navbar() {
         {/* Mobile Menu */}
         {isMenuOpen && (
           <div className="md:hidden py-4 space-y-2 border-t border-primary/20">
-            <Link href="/shop" className="block px-3 py-2 text-muted-foreground hover:text-primary transition-colors">
+            <Link 
+              href="/shop" 
+              className="block px-3 py-2 text-muted-foreground hover:text-primary transition-colors"
+              onClick={handleLinkClick}
+            >
               Tienda
             </Link>
             <Link
-              href="/shop/smartphones"
+              href="/contact"
               className="block px-3 py-2 text-muted-foreground hover:text-primary transition-colors"
+              onClick={handleLinkClick}
             >
-              Smartphones
-            </Link>
-            <Link
-              href="/shop/laptops"
-              className="block px-3 py-2 text-muted-foreground hover:text-primary transition-colors"
-            >
-              Laptops
-            </Link>
-            <Link
-              href="/shop/accesorios"
-              className="block px-3 py-2 text-muted-foreground hover:text-primary transition-colors"
-            >
-              Accesorios
+              Contacto
             </Link>
           </div>
         )}

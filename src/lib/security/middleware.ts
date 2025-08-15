@@ -41,11 +41,13 @@ export function securityHeaders(response: NextResponse): NextResponse {
 export async function securityMiddleware(request: NextRequest): Promise<NextResponse | null> {
   const { pathname } = request.nextUrl
   
-  // No aplicar seguridad estricta a rutas de autenticación
+  // No aplicar seguridad estricta a rutas de autenticación y órdenes
   const isAuthRoute = pathname.startsWith('/api/auth/')
+  const isOrdersRoute = pathname.startsWith('/orders')
+  const isProtectedUserRoute = isAuthRoute || isOrdersRoute
   
-  if (!isAuthRoute) {
-    // 1. Detectar actividad sospechosa solo en rutas no-auth
+  if (!isProtectedUserRoute) {
+    // 1. Detectar actividad sospechosa solo en rutas públicas
     const suspiciousActivity = detectSuspiciousActivity(request)
     if (suspiciousActivity.suspicious) {
       console.warn(`Actividad sospechosa detectada:`, {
@@ -57,6 +59,7 @@ export async function securityMiddleware(request: NextRequest): Promise<NextResp
       
       // Bloquear requests muy sospechosos (solo si tiene más de 3 razones)
       if (suspiciousActivity.reasons.length > 3) {
+        console.warn(`Bloqueando acceso por actividad altamente sospechosa:`, suspiciousActivity.reasons)
         return new NextResponse('Acceso bloqueado', { status: 403 })
       }
     }
@@ -71,16 +74,17 @@ export async function securityMiddleware(request: NextRequest): Promise<NextResp
     rateLimitResult = await adminActionsRateLimit(request)
   } else if (pathname.startsWith('/api/')) {
     rateLimitResult = await apiRateLimit(request)
-  } else {
+  } else if (!isOrdersRoute) { // No aplicar rate limiting general a páginas de órdenes
     rateLimitResult = await generalRateLimit(request)
   }
   
   if (rateLimitResult) {
+    console.warn(`Rate limit exceeded for path: ${pathname}`)
     return rateLimitResult
   }
   
-  // 3. Sanitizar parámetros de consulta (solo para rutas no-auth)
-  if (!isAuthRoute) {
+  // 3. Sanitizar parámetros de consulta (solo para rutas públicas)
+  if (!isProtectedUserRoute) {
     const url = request.nextUrl
     let modified = false
     
